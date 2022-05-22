@@ -27,11 +27,21 @@ def appendToErrorLog(text):
         output.write('\n')
 
 
-def resize(inputZip, outputZip, resizeLandscape, resizePortrait):
+def resize(inputZip, outputZip, resizeLandscape, resizePortrait, flipLandscape):
     """Resize images inside inputZip and save the new images into outputZip"""
     infoList = inputZip.infolist()
     i = 1
     total = len(infoList)
+
+    if flipLandscape.upper() == 'LEFT':
+        angle = 90
+    elif flipLandscape.upper() == 'RIGHT':
+        angle = 270
+    elif flipLandscape.upper() == 'NONE':
+        angle = 0
+    else:
+        angle = 0
+
     for info in infoList:
         filename = info.filename
         _, ext = os.path.splitext(filename)
@@ -54,7 +64,7 @@ def resize(inputZip, outputZip, resizeLandscape, resizePortrait):
             #
             # ANTIALIAS is a alias for LANCZOS for backward compatibility
             if img.size[0] > img.size[1]:
-                out = img.rotate(270, expand=True, fillcolor=None)
+                out = img.rotate(angle, expand=True, fillcolor=None)
                 out.thumbnail(resizeLandscape, Image.Resampling.LANCZOS)
                 # out.show()
             else:
@@ -77,6 +87,7 @@ def resizeZippedImages(inputPath, outputPath, configParameters):
     resizeLandscape = (value, value)
     value = int(configParameters['resize_portrait'])
     resizePortrait = (value, value)
+    flipLandscape = configParameters['flip_landscape']
     tempPath = outputPath + ".0bd15818604b995cd9c00825a4c692d5d.temp"
     try:
         directory, _ = os.path.split(outputPath)
@@ -84,7 +95,7 @@ def resizeZippedImages(inputPath, outputPath, configParameters):
             os.makedirs(directory)
         with zipfile.ZipFile(inputPath) as inZip:
             with zipfile.ZipFile(tempPath, 'w', zipfile.ZIP_STORED) as outZip:
-                resize(inZip, outZip, resizeLandscape, resizePortrait)
+                resize(inZip, outZip, resizeLandscape, resizePortrait, flipLandscape)
             os.rename(tempPath, outputPath)
     except ValueError as err:
         appendToErrorLog(f"{inputPath}: {err}")
@@ -179,11 +190,16 @@ def readConfigurationFile(arg0):
         # For example, on a older tablet with only a 1080x768 resolution both
         # values should be set to (1080, 1080) or (1366, 1366).
         # Obviously larger values means a larger file size
+        #
+        # Iriver Story HD has a resolution of 1024x768
         configParameters['resize_landscape'] = '1024'
         configParameters['resize_portrait'] = '1024'
 
+        # Flip landscape (double) pages; RIGHT (CW), LEFT (CCW) or NONE 
+        configParameters['flip_landscape'] = 'RIGHT'
+
         # Can be anything, but must start with '.' and must end with '.cbz'
-        configParameters['resized_file_ext'] = '.resized-flipped'
+        configParameters['resized_file_ext'] = '.iriver'
         # By default, will only process files with extension ".zip" or ".cbz"
         configParameters['ext_zip_or_cbz'] = '1'
 
