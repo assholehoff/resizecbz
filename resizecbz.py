@@ -53,13 +53,17 @@ def resize(inputZip, outputZip, resizeLandscape, resizePortrait):
             # LANCZOS   *              ****
             #
             # ANTIALIAS is a alias for LANCZOS for backward compatibility
-            oldSize = img.size
-            img.thumbnail(resizeLandscape if img.size[0] > img.size[1]
-                          else resizePortrait, Image.LANCZOS)
-            print(f"{i}/{total} {img.format} {oldSize}->{img.size} {filename}")
+            if img.size[0] > img.size[1]:
+                out = img.rotate(270, expand=True, fillcolor=None)
+                out.thumbnail(resizeLandscape, Image.Resampling.LANCZOS)
+                # out.show()
+            else:
+                out = img
+                out.thumbnail(resizePortrait, Image.Resampling.LANCZOS)
+            print(f"{i}/{total} {img.format} {img.size}->{out.size} {filename}")
             i = i + 1
             buffer = io.BytesIO()
-            img.save(buffer, format=img.format)
+            out.save(buffer, format=img.format)
             outputZip.writestr(info, buffer.getvalue())
             sys.stdout.flush()
             # output.getvalue()
@@ -141,7 +145,7 @@ def readConfigurationFile(arg0):
     home = os.path.expanduser("~")
     homeConfig = os.path.join(home, ".config")
     homeConfigApp = os.path.join(homeConfig, "resizecbz")
-    configFilename = ".resizecbz.cfg"
+    configFilename = "resizecbz.cfg"
 
     # print(f"cmdDirectory({cmdDirectory})")
     config = configparser.ConfigParser()
@@ -163,7 +167,7 @@ def readConfigurationFile(arg0):
         # Output directory can be an absolute or relative path.
         # If set to None or '' then the resized files will be
         # in the same directory as the source
-        configParameters['output_directory'] = 'resized'
+        configParameters['output_directory'] = 'resized-flipped'
 
         # Play around with these two parameters to to get the size that is most
         # pleasing for your eyes with the display.  In general you want them
@@ -175,11 +179,11 @@ def readConfigurationFile(arg0):
         # For example, on a older tablet with only a 1080x768 resolution both
         # values should be set to (1080, 1080) or (1366, 1366).
         # Obviously larger values means a larger file size
-        configParameters['resize_landscape'] = '1366'
-        configParameters['resize_portrait'] = '1080'
+        configParameters['resize_landscape'] = '1024'
+        configParameters['resize_portrait'] = '1024'
 
         # Can be anything, but must start with '.' and must end with '.cbz'
-        configParameters['resized_file_ext'] = '.resized'
+        configParameters['resized_file_ext'] = '.resized-flipped'
         # By default, will only process files with extension ".zip" or ".cbz"
         configParameters['ext_zip_or_cbz'] = '1'
 
