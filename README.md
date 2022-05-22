@@ -1,5 +1,5 @@
 # resizecbz
-Python script to resize all images inside a CBZ (Comic Book Zip)
+Python script to resize all images inside a CBZ (Comic Book Zip)\
 With some additions and defaults to better suit my iRiver Story HD.
 
 Usage: python resizecbz.py file1 file2 ....
