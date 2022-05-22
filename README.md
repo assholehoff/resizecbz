@@ -1,5 +1,6 @@
 # resizecbz
 Python script to resize all images inside a CBZ (Comic Book Zip)
+With some additions and defaults to better suit my iRiver Story HD.
 
 Usage: python resizecbz.py file1 file2 ....
 
@@ -14,9 +15,11 @@ There is a pre-built Windows executable for users who don't have Python installe
 
 Any error will be logged into the file "resizecbz.error.log.txt" 
 
-You can control the maximum size of the images, the destination directory, and the extesion of the resized file via a configuration file.  A sample configuration file ".resizecbz.cfg.sample" will be created the first time you run the script without any parameters. You can edit this file and then rename it to ".resizecbz.cfg" and it will be loaded by the script.  You can put .resizecbz.cfg in the direcotory where you run the script (so you can have a different resize parameters for each direcotory), the same direcotory as the script, in your home directory, or in ~/config/resizecbz.
+You can control the maximum size of the images, the destination directory, and the extesion of the resized file via a configuration file.  A sample configuration file "resizecbz.cfg.sample" will be created the first time you run the script without any parameters. You can edit this file and then rename it to "resizecbz.cfg" and it will be loaded by the script.  You can put resizecbz.cfg in the direcotory where you run the script (so you can have a different resize parameters for each direcotory), the same direcotory as the script, in your home directory, or in ~/config/resizecbz.
 
-By default the maximum width in landscape mode is 1366, the maximum height in portrait mode is 1080, the directory is a subdirectory "resized" underneath the source directory, and the default extension is "resized.cbz".
+By default the maximum width in landscape mode is 1024, the maximum height in portrait mode is 1024, the directory is a subdirectory "resized" underneath the source directory, and the default extension is "iriver.cbz".
+
+The iRiver Story HD has a resultion of 1024x768. It does not allow for the landscape pages of a cbz to be flipped dynamically. (It will split the image in two pages, screwing with the page order if you read a comic from right to left.) This addition lets you flip the landscape pages either left (ccw) or right (cw). 
 
 The program will only attempt to resize images in files that have the extension .zip or .cbz. All other files will be ignore. If you have a zip file with an extension other than .zip or .cbz then you have to either rename the file to have the right extension, or edit the config file and set "ext_zip_or_cbz = 0".  But if you do that then you have to ensure that you only specify files that are actually zip files, else many errors will be generated when the script attemp to open files as a zip when you specify a general wildcard like "*.*".
 
