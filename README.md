@@ -16,9 +16,9 @@ The iRiver Story HD has a resolution of 768x1024. It does not allow for the land
 
 ## Usage
 ---
-```man
-resizecbz [-w resolution] [-r rotation] [-d directory] [-e ext] [-u] [file ...]
-```
+<pre><code><b>resizecbz</b> [<b>-w</b> resolution] [<b>-r</b> rotation] [<b>-d</b> directory] [<b>-e</b> extension] [<b>-u</b>] [file ...]
+</code></pre>
+
 `file` can contain wildcards such as ***.cbz**, **abc?.cbz**, etc.\
 For example: `resizecbz collection1/*.cbz collection2/xyz*.cbz`
 
@@ -29,11 +29,11 @@ Any error will be logged into the file `resizecbz.error.log`
 ` -r, --rotation` valid options are `right`, `left` or `none` (anything else than `right` or `left` translates to none, defaults to `right`)\
 ` -d, --directory` name of the directory to put the resized CBZ files in\
 ` -e, --extension` this string will be added to the filename before the CBZ extension\
-` -u, --unsafe` do not check the file extension, use if your CBZ files are not ending in CBZ or ZIP
+` -u, --unsafe` do not check the file extension, use if your CBZ files are not ending in CBZ or ZIP\
 
 ## Install and Dependencies
 ---
-The script requires python 3 and the pillow module.
+The script requires **`python 3+`** and the **`pillow`** module.
 
 ### macOS with [Homebrew](https://brew.sh)🍺
 ```shell
@@ -42,7 +42,7 @@ python pip install pillow
 ```
 
 I prefer put it somewhere in `$PATH` so I can invoke it as an ordinary command wherever.\
-On macOS and BSD you can use `install(1)` to put it under `/usr/local/bin/` or similar.
+On **macOS** and **BSD** you can use `install(1)` to put it under `/usr/local/bin/` or similar.
 ```shell
 sudo install -m 755 -o $USER -g bin resizecbz.py /usr/local/bin/resizecbz
 ```
@@ -53,7 +53,7 @@ You can control the maximum size of the images, the destination directory, and t
 
 By default the maximum width in landscape mode is 768, and the maximum height in portrait mode is 1024, the directory is a subdirectory `resized` underneath the source directory, and the default extension is `rs.cbz`.
 
-The program will only attempt to resize images in files that have the extension `.zip` or `.cbz`. All other files will be ignore. If you have a zip file with an extension other than `.zip` or `.cbz` then you have to either rename the file to have the right extension, or edit the config file and set `ext_zip_or_cbz = 0`.  But if you do that then you have to ensure that you only specify files that are actually zip files, else many errors will be generated when the script attemp to open files as a zip when you specify a general wildcard like `*.*`
+The program will only attempt to resize images in files that have the extension `zip` or `cbz`. All other files will be ignore. If you have a zip file with an extension other than `zip` or `cbz` then you have to either rename the file to have the right extension, or edit the config file and set `ext_zip_or_cbz = 0`.  But if you do that then you have to ensure that you only specify files that are actually zip files, else many errors will be generated when the script attemp to open files as a zip when you specify a general wildcard like `*.*`
 
 ## FAQ
 ---
@@ -65,4 +65,4 @@ Mostly minor details due to personal preference.
 * adjusted default resolution to `768x1024` (iRiver Story HD)
 * set default rotation to `right` (90° clockwise)
 * added shebang to make script executable (I prefer to put it somewhere in `$PATH`)
-* added flags to change settings at runtime
+* added flags to change settings at runtime (flags always override config file)
