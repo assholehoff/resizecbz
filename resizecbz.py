@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """Resize images inside CBZ (Comic Book Zip) files so that the file is smaller.
 As a bonus the images should also load faster in your favorite CBZ reader"""
 
@@ -5,13 +7,13 @@ import os
 import sys
 import io
 import glob
+import argparse
 import configparser
 import zipfile
 from PIL import Image
 
-
 def appendToErrorLog(text):
-    """Append text to error log text file"""
+    """Append text to error log file"""
     # https://stackoverflow.com/questions/230751/how-can-i-flush-the-output-of-the-print-function-unbuffer-python-output
     print(text, flush=True)
     # Must open in text mode or there will be an error:
@@ -21,23 +23,24 @@ def appendToErrorLog(text):
     # When writing output to the stream if newline is None, any '\n' characters
     # written are translated to the system default line separator, os.linesep.
     # If newline is '' or '\n', no translation takes place.
-    with open("resizecbz.error.log.txt", 'at',
+    with open("resizecbz.error.log", 'at',
               newline='', encoding='utf8') as output:
         output.write(text)
         output.write('\n')
 
-
-def resize(inputZip, outputZip, resizeLandscape, resizePortrait, flipLandscape):
+def resize(inputZip, outputZip, resizeLandscape, resizePortrait, rotateLandscape):
     """Resize images inside inputZip and save the new images into outputZip"""
     infoList = inputZip.infolist()
     i = 1
     total = len(infoList)
 
-    if flipLandscape.upper() == 'LEFT':
+    if rotateLandscape.lower() == 'left':
         angle = 90
-    elif flipLandscape.upper() == 'RIGHT':
+        resizeLandscape = resizePortrait
+    elif rotateLandscape.lower() == 'right':
         angle = 270
-    elif flipLandscape.upper() == 'NONE':
+        resizeLandscape = resizePortrait
+    elif rotateLandscape.lower() == 'none':
         angle = 0
     else:
         angle = 0
@@ -87,7 +90,7 @@ def resizeZippedImages(inputPath, outputPath, configParameters):
     resizeLandscape = (value, value)
     value = int(configParameters['resize_portrait'])
     resizePortrait = (value, value)
-    flipLandscape = configParameters['flip_landscape']
+    rotateLandscape = configParameters['rotate_landscape']
     tempPath = outputPath + ".0bd15818604b995cd9c00825a4c692d5d.temp"
     try:
         directory, _ = os.path.split(outputPath)
@@ -95,7 +98,7 @@ def resizeZippedImages(inputPath, outputPath, configParameters):
             os.makedirs(directory)
         with zipfile.ZipFile(inputPath) as inZip:
             with zipfile.ZipFile(tempPath, 'w', zipfile.ZIP_STORED) as outZip:
-                resize(inZip, outZip, resizeLandscape, resizePortrait, flipLandscape)
+                resize(inZip, outZip, resizeLandscape, resizePortrait, rotateLandscape)
             os.rename(tempPath, outputPath)
     except ValueError as err:
         appendToErrorLog(f"{inputPath}: {err}")
@@ -113,7 +116,6 @@ def resizeZippedImages(inputPath, outputPath, configParameters):
             os.remove(outputPath)
         raise
 
-
 def resizeCbz(path, configParameters):
     """resize the CBZ path with configuration specified in configParameters"""
     if not os.path.isfile(path):
@@ -130,8 +132,9 @@ def resizeCbz(path, configParameters):
 
     resizedFileExt = configParameters['resized_file_ext']
     if not resizedFileExt.startswith('.'):
-        raise ValueError(f"resized_file_ext({resizedFileExt}) " +
-                         "does not start with period")
+        resizedFileExt = '.' + resizedFileExt
+        #raise ValueError(f"resized_file_ext({resizedFileExt}) " +
+        #                 "does not start with period")
     resizedFileExt = resizedFileExt + ext
 
     if path.endswith(resizedFileExt):
@@ -148,7 +151,6 @@ def resizeCbz(path, configParameters):
         print(f"output {outputPath} already exists")
     else:
         resizeZippedImages(path, outputPath, configParameters)
-
 
 def readConfigurationFile(arg0):
     """Read configuration file from a series of possible directories"""
@@ -178,7 +180,7 @@ def readConfigurationFile(arg0):
         # Output directory can be an absolute or relative path.
         # If set to None or '' then the resized files will be
         # in the same directory as the source
-        configParameters['output_directory'] = 'resized-flipped'
+        configParameters['output_directory'] = 'resized'
 
         # Play around with these two parameters to to get the size that is most
         # pleasing for your eyes with the display.  In general you want them
@@ -192,14 +194,14 @@ def readConfigurationFile(arg0):
         # Obviously larger values means a larger file size
         #
         # Iriver Story HD has a resolution of 1024x768
-        configParameters['resize_landscape'] = '1024'
+        configParameters['resize_landscape'] = '768'
         configParameters['resize_portrait'] = '1024'
 
-        # Flip landscape (double) pages; RIGHT (CW), LEFT (CCW) or NONE 
-        configParameters['flip_landscape'] = 'RIGHT'
+        # Rotate landscape (double) pages; RIGHT (CW), LEFT (CCW) or NONE
+        configParameters['rotate_landscape'] = 'right'
 
         # Can be anything, but must start with '.' and must end with '.cbz'
-        configParameters['resized_file_ext'] = '.iriver'
+        configParameters['resized_file_ext'] = '.rs'
         # By default, will only process files with extension ".zip" or ".cbz"
         configParameters['ext_zip_or_cbz'] = '1'
 
@@ -229,6 +231,61 @@ def readConfigurationFile(arg0):
 
     return configParameters
 
+def parseArguments(args, configParameters):
+    newConfigParameters = configParameters
+    parser = argparse.ArgumentParser(
+                        prog = 'resizecbz',
+                        description = 'Resize all pages in a CBZ.',
+                        # epilog = ''
+    )
+    parser.add_argument('-w', '--resolution', help='maximum resolution to scale down to', metavar='res')
+    parser.add_argument('-r', '--rotation', choices=['left', 'right', 'none'], metavar='rot')
+    parser.add_argument('-d', '--directory', help='the directory to put resized files in', metavar='dir')
+    parser.add_argument('-e', '--extension', help='filename.ext.cbz', metavar='ext')
+    parser.add_argument('-u', '--unsafe', action='store_true', help='disable file extension check')
+    parser.add_argument('filename', nargs='*', help='file(s) to process')
+
+    args = parser.parse_args()
+    filename = args.filename
+    print('filename:', args.filename)
+
+    if not args.resolution is None:
+        if not args.resolution.isdigit():
+            res = args.resolution.split('x')
+            if int(res[0]) > int(res[1]):
+                newConfigParameters['resize_portrait'] = res[0]
+                newConfigParameters['resize_landscape'] = res[1]
+            else:
+                newConfigParameters['resize_portrait'] = res[1]
+                newConfigParameters['resize_landscape'] = res[0]
+        else:
+            newConfigParameters['resize_portrait'] = args.resolution
+            newConfigParameters['resize_landscape'] = args.resolution
+    # else:
+    #     newConfigParameters['resize_portrait'] = configParameters['resize_portrait']
+    #     newConfigParameters['resize_landscape'] = configParameters['resize_landscape']
+
+    if not args.rotation is None:
+        newConfigParameters['rotate_landscape'] = args.rotation
+    # else:
+    #     newConfigParameters['rotate_landscape'] = configParameters['rotate_landscape']
+
+    if not args.directory is None:
+        newConfigParameters['output_directory'] = args.directory
+    # else:
+    #     newConfigParameters['output_directory'] = configParameters['output_directory']
+
+    if not args.extension is None:
+        newConfigParameters['resized_file_ext'] = args.extension
+    # else:
+    #     newConfigParameters['resized_file_ext'] = configParameters['resized_file_ext']
+
+    if args.unsafe:
+        newConfigParameters['ext_zip_or_cbz'] = '0'
+    # else:
+    #     newConfigParameters['ext_zip_or_cbz'] = configParameters['ext_zip_or_cbz']
+
+    return newConfigParameters, filename
 
 if __name__ == '__main__':
 
@@ -239,11 +296,12 @@ if __name__ == '__main__':
         Image.MAX_IMAGE_PIXELS = None
         arg0 = argv[0]
         configParameters = readConfigurationFile(arg0)
+        configParameters, filename = parseArguments(argv, configParameters)
         for key in configParameters:
             print(f"{key}={configParameters[key]}")
 
-        if len(argv) > 1:
-            for x in argv[1:]:
+        if len(filename) > 0:
+            for x in filename[0:]:
                 for path in glob.glob(x) if '*' in x or '?' in x else [x]:
                     try:
                         resizeCbz(path, configParameters)
@@ -261,6 +319,5 @@ if __name__ == '__main__':
                 print(f"\nUsage: {cmd} file1 file2...\n" +
                       "file1 can contain wildcards such as '*' and '?'\n\n" +
                       "For example: {cmd} d:\\mycollection\\*.cbz xyz\\??.cbz")
-
 
 main(sys.argv)
