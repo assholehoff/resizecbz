@@ -24,7 +24,7 @@ Any error will be logged into the file `resizecbz.error.log`
 ` -r, --rotation` valid options are `right`, `left` or `none` (anything else than `right` or `left` translates to none, defaults to `right`)\
 ` -d, --directory` name of the directory to put the resized CBZ files in\
 ` -e, --extension` this string will be added to the filename before the CBZ extension\
-` -u, --unsafe` do not check the file extension, use if your CBZ files are not ending in CBZ or ZIP\
+` -u, --unsafe` do not check the file extension, use if your CBZ files are not ending in CBZ or ZIP
 
 ## Install and Dependencies
 ---
