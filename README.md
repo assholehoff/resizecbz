@@ -1,8 +1,3 @@
-<style>
-   h2 {
-      margin-top: 26pt;
-   }
-</style>
 # resizecbz-rf (rotate fork)
 Python script to resize all images inside a CBZ (Comic Book Zip).\
 This fork comes with some additions and defaults to better suit my iRiver Story HD.
