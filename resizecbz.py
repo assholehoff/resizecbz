@@ -226,8 +226,8 @@ def readConfigurationFile(arg0):
             with open(samplePath, 'w', encoding='utf8') as output:
                 config.write(output)
         print(f"Rename {samplePath} to {configFilename}\n" +
-              "and edit it if you want to change the default value\n" +
-              "No user specified config, use default parameters")
+              "and edit it if you want to change the default values\n" +
+              "Flags always override config file parameters.")
 
     return configParameters
 
@@ -235,8 +235,8 @@ def parseArguments(args, configParameters):
     newConfigParameters = configParameters
     parser = argparse.ArgumentParser(
                         prog = 'resizecbz',
-                        description = 'Resize all pages in a CBZ.',
-                        # epilog = ''
+                        description = 'Resize all pages in a CBZ. Optionally rotate landscape images.',
+                        epilog = 'filename can contain wildcards, such as * or ?'
     )
     parser.add_argument('-w', '--resolution', help='maximum resolution to scale down to', metavar='res')
     parser.add_argument('-r', '--rotation', choices=['left', 'right', 'none'], metavar='rot')
@@ -261,29 +261,18 @@ def parseArguments(args, configParameters):
         else:
             newConfigParameters['resize_portrait'] = args.resolution
             newConfigParameters['resize_landscape'] = args.resolution
-    # else:
-    #     newConfigParameters['resize_portrait'] = configParameters['resize_portrait']
-    #     newConfigParameters['resize_landscape'] = configParameters['resize_landscape']
 
     if not args.rotation is None:
         newConfigParameters['rotate_landscape'] = args.rotation
-    # else:
-    #     newConfigParameters['rotate_landscape'] = configParameters['rotate_landscape']
 
     if not args.directory is None:
         newConfigParameters['output_directory'] = args.directory
-    # else:
-    #     newConfigParameters['output_directory'] = configParameters['output_directory']
 
     if not args.extension is None:
         newConfigParameters['resized_file_ext'] = args.extension
-    # else:
-    #     newConfigParameters['resized_file_ext'] = configParameters['resized_file_ext']
 
     if args.unsafe:
         newConfigParameters['ext_zip_or_cbz'] = '0'
-    # else:
-    #     newConfigParameters['ext_zip_or_cbz'] = configParameters['ext_zip_or_cbz']
 
     return newConfigParameters, filename
 
@@ -308,16 +297,10 @@ if __name__ == '__main__':
                     except ValueError as err:
                         appendToErrorLog(f"{path}: {err}")
         else:
-            inputPath = "testcbz.cbz"
-            outputPath = "testcbz.resized.cbz"
-            if os.path.isfile(inputPath):
-                if os.path.isfile(outputPath):
-                    os.remove(outputPath)
-                resizeZippedImages(inputPath, outputPath, configParameters)
-            else:
-                cmd = os.path.basename(arg0)
-                print(f"\nUsage: {cmd} file1 file2...\n" +
-                      "file1 can contain wildcards such as '*' and '?'\n\n" +
-                      "For example: {cmd} d:\\mycollection\\*.cbz xyz\\??.cbz")
+            cmd = os.path.basename(arg0)
+            print(f"\nUsage: {cmd} [file ...]\n" +
+                    "file can contain wildcards such as '*' and '?'\n" +
+                    "Example: {cmd} collection/*.cbz xyz/??.cbz\n\n" +
+                    "Run {cmd} --help for more information.")
 
 main(sys.argv)
