@@ -12,24 +12,27 @@ import configparser
 import zipfile
 from PIL import Image
 
-sampleConfig = """[resize.cbz]
+sampleConfig = """['resize.cbz']
 # Output directory can be an absolute or relative path.
-# If set to None or '' then the resized files will be put
+# If set to '.' or '' then the resized files will be put
 # in the same directory as the original files.
-output_directory = resized
+# Defaults to 'resized'.
+['output_directory'] = 'resized'
 # Set to the resolution of your ebook reader.
 # If your ebook reader can rotate landscape images
 # you may want to use the same value for both parameters.
-resize_landscape = 1024
-resize_portrait = 1024
+# Defaults to 768x1024 (iRiver Story HD).
+['resize_landscape'] = '768'
+['resize_portrait'] = '1024'
 # Rotate landscape images, can be set to right (cw), left (ccw) or none.
 # Defaults to right. Any value but right and left is interpreted as none.
-flip_landscape = right
+['flip_landscape'] = 'right'
 # This string will be added after the filename before the extension.
-resized_file_ext = rs
+['resized_file_ext'] = 'rs'
 # Process only files with the extension CBZ or ZIP.
 # Set to 0 to disable this check.
-ext_zip_or_cbz = 1"""
+['ext_zip_or_cbz'] = '1'
+"""
 
 def appendToErrorLog(text):
     """Append text to error log file"""
@@ -160,7 +163,7 @@ def resizeCbz(path, configParameters):
     outputDirectory = configParameters['output_directory']
     if outputDirectory:
         outputPath = os.path.expanduser(os.path.join(outputDirectory,
-                                  os.path.basename(outputPath)))
+                                        os.path.basename(outputPath)))
 
     if os.path.exists(outputPath):
         # Not an error, just give a warning
@@ -241,7 +244,7 @@ def readConfigurationFile(arg0):
         if not os.path.exists(samplePath):
             print(f"Create sample config file {samplePath}")
             with open(samplePath, 'w', encoding='utf8') as output:
-                config.write(output)
+                output.write(sampleConfig)
         print(f"Rename {samplePath} to {configFilename}\n" +
               "and edit it if you want to change the default values\n" +
               "Flags always override config file parameters.")
@@ -329,7 +332,7 @@ if __name__ == '__main__':
         Image.MAX_IMAGE_PIXELS = None
         arg0 = argv[0]
         configParameters, configfile = readConfigurationFile(arg0)
-        configParameters, filename = parseArguments(argv, configParameters)
+        configParameters, filename, tempConfig = parseArguments(argv, configParameters)
         printConfig(configfile, configParameters)
 
         # for key in configParameters:
