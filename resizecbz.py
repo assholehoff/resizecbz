@@ -12,6 +12,25 @@ import configparser
 import zipfile
 from PIL import Image
 
+sampleConfig = """[resize.cbz]
+# Output directory can be an absolute or relative path.
+# If set to None or '' then the resized files will be put
+# in the same directory as the original files.
+output_directory = resized
+# Set to the resolution of your ebook reader.
+# If your ebook reader can rotate landscape images
+# you may want to use the same value for both parameters.
+resize_landscape = 1024
+resize_portrait = 1024
+# Rotate landscape images, can be set to right (cw), left (ccw) or none.
+# Defaults to right. Any value but right and left is interpreted as none.
+flip_landscape = right
+# This string will be added after the filename before the extension.
+resized_file_ext = rs
+# Process only files with the extension CBZ or ZIP.
+# Set to 0 to disable this check.
+ext_zip_or_cbz = 1"""
+
 def appendToErrorLog(text):
     """Append text to error log file"""
     # https://stackoverflow.com/questions/230751/how-can-i-flush-the-output-of-the-print-function-unbuffer-python-output
@@ -79,9 +98,6 @@ def resize(inputZip, outputZip, resizeLandscape, resizePortrait, rotateLandscape
             out.save(buffer, format=img.format)
             outputZip.writestr(info, buffer.getvalue())
             sys.stdout.flush()
-            # output.getvalue()
-            # img.show()
-
 
 def resizeZippedImages(inputPath, outputPath, configParameters):
     """Resize images in file inputPath and save the new images in outputPath"""
@@ -143,8 +159,8 @@ def resizeCbz(path, configParameters):
     outputPath = name + resizedFileExt
     outputDirectory = configParameters['output_directory']
     if outputDirectory:
-        outputPath = os.path.join(outputDirectory,
-                                  os.path.basename(outputPath))
+        outputPath = os.path.expanduser(os.path.join(outputDirectory,
+                                  os.path.basename(outputPath)))
 
     if os.path.exists(outputPath):
         # Not an error, just give a warning
@@ -257,10 +273,13 @@ def parseArguments(args, configParameters):
     parser.add_argument('-d', '--directory', help='the directory to put resized files in', metavar='dir')
     parser.add_argument('-e', '--extension', help='will be appended to the filename before the extension \'filename.ext.cbz\'', metavar='ext')
     parser.add_argument('-u', '--unsafe', action='store_true', help='disable file extension check')
+    parser.add_argument('-c', '--config-file', help='use configuration file at this path', metavar='cfg')
+    parser.add_argument('-g', '--generate-config', action='store_true', help='generate a sample configuration file')
     parser.add_argument('filename', nargs='*', help='file(s) to process')
 
     args = parser.parse_args()
     filename = args.filename
+    tempConfig = args.config_file
     # print('filename:', args.filename)
 
     if not args.resolution is None:
@@ -288,7 +307,10 @@ def parseArguments(args, configParameters):
     if args.unsafe:
         newConfigParameters['ext_zip_or_cbz'] = '0'
 
-    return newConfigParameters, filename
+    if args.generate_config:
+        generateSampleConfig()
+
+    return newConfigParameters, filename, tempConfig
 
 def printConfig(configfile, configParameters):
     if os.path.exists(configfile):
