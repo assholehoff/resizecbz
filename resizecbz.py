@@ -159,6 +159,7 @@ def readConfigurationFile(arg0):
     homeConfig = os.path.join(home, ".config")
     homeConfigApp = os.path.join(homeConfig, "resizecbz")
     configFilename = "resizecbz.cfg"
+    path = None
 
     # print(f"cmdDirectory({cmdDirectory})")
     config = configparser.ConfigParser()
@@ -170,7 +171,7 @@ def readConfigurationFile(arg0):
             with open(path, encoding='utf8') as file:
                 config.read_file(file)
                 configParameters = config['resize.cbz']
-                print(f'Reading parameters from "{path}": ')
+                # print(f'Reading parameters from "{path}": ')
                 break
 
     if not configParameters:
@@ -229,25 +230,38 @@ def readConfigurationFile(arg0):
               "and edit it if you want to change the default values\n" +
               "Flags always override config file parameters.")
 
-    return configParameters
+    return configParameters, path
+
+def makeWide(formatter, width=120, hmax=20):
+    """Return a wider HelpFormatter, if possible."""
+    # https://stackoverflow.com/questions/5462873/control-formatting-of-the-argparse-help-argument-list
+    try:
+        args = {'width': width, 'max_help_position': hmax}
+        formatter(None, **args)
+        return lambda prog: formatter(prog, **args)
+    except TypeError:
+        warnings.warn("argparse help formatter failed, falling back")
+        return formatter
 
 def parseArguments(args, configParameters):
+    """Parse arguments for flags and filenames, show help"""
     newConfigParameters = configParameters
     parser = argparse.ArgumentParser(
+                        formatter_class=makeWide(argparse.HelpFormatter, width=120, hmax=28),
                         prog = 'resizecbz',
                         description = 'Resize all pages in a CBZ. Optionally rotate landscape images.',
                         epilog = 'filename can contain wildcards, such as * or ?'
     )
-    parser.add_argument('-w', '--resolution', help='maximum resolution to scale down to', metavar='res')
-    parser.add_argument('-r', '--rotation', choices=['left', 'right', 'none'], metavar='rot')
+    parser.add_argument('-w', '--resolution', help='maximum resolution to scale down to, can be a single value or a resolution in the form \'1024x768\' or \'768x1024\'', metavar='res')
+    parser.add_argument('-r', '--rotation', choices=['left', 'right', 'none'], help='rotate landscape images 90°, valid values are \'right\', \'left\' or \'none\'', metavar='rot')
     parser.add_argument('-d', '--directory', help='the directory to put resized files in', metavar='dir')
-    parser.add_argument('-e', '--extension', help='filename.ext.cbz', metavar='ext')
+    parser.add_argument('-e', '--extension', help='will be appended to the filename before the extension \'filename.ext.cbz\'', metavar='ext')
     parser.add_argument('-u', '--unsafe', action='store_true', help='disable file extension check')
     parser.add_argument('filename', nargs='*', help='file(s) to process')
 
     args = parser.parse_args()
     filename = args.filename
-    print('filename:', args.filename)
+    # print('filename:', args.filename)
 
     if not args.resolution is None:
         if not args.resolution.isdigit():
@@ -276,6 +290,14 @@ def parseArguments(args, configParameters):
 
     return newConfigParameters, filename
 
+def printConfig(configfile, configParameters):
+    if os.path.exists(configfile):
+        print(f"Using parameters from {configfile}:")
+        for key in configParameters:
+            print(f"{key} = {configParameters[key]}")
+    else:
+        print(f"No configuration file found. Using default parameters:")
+
 if __name__ == '__main__':
 
     def main(argv):
@@ -284,10 +306,12 @@ if __name__ == '__main__':
         # Image size (xxxxpixels) exceeds limit..."
         Image.MAX_IMAGE_PIXELS = None
         arg0 = argv[0]
-        configParameters = readConfigurationFile(arg0)
+        configParameters, configfile = readConfigurationFile(arg0)
         configParameters, filename = parseArguments(argv, configParameters)
-        for key in configParameters:
-            print(f"{key}={configParameters[key]}")
+        printConfig(configfile, configParameters)
+
+        # for key in configParameters:
+        #     print(f"{key}={configParameters[key]}")
 
         if len(filename) > 0:
             for x in filename[0:]:
@@ -298,9 +322,6 @@ if __name__ == '__main__':
                         appendToErrorLog(f"{path}: {err}")
         else:
             cmd = os.path.basename(arg0)
-            print(f"\nUsage: {cmd} [file ...]\n" +
-                    "file can contain wildcards such as '*' and '?'\n" +
-                    "Example: {cmd} collection/*.cbz xyz/??.cbz\n\n" +
-                    "Run {cmd} --help for more information.")
+            print(f"\nRun {cmd} --help for more information.")
 
 main(sys.argv)
